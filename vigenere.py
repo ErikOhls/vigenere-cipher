@@ -3,9 +3,9 @@
 def main():
     key_space = "abcdefghijklmnopqrstuvwxyzåäö ,."
     #key_space = "abcdefghijklmnopqrstuvwxyz"
-    key = "summer"
+    key = "femma"
 
-    f = open("sample.txt", "r+")
+    f = open("vig_group17.plain", "r+")
     plain = f.read()
     plain = sanitize(plain.lower(), key_space)
     f.seek(0)
@@ -15,7 +15,7 @@ def main():
 
     cipher = encrypt(plain, key_space, key)
 
-    f = open("encryption.txt", "w+")
+    f = open("vig_group17.crypto", "w+")
     f.write(cipher)
     f.close()
 
@@ -63,7 +63,7 @@ def decrypt(cipher, key_space, key):
             print("Encountered character not in key_space, character will not be decrypted")
             plain = plain + char # Note, cipher key does not advance
 
-    print("Decrypted text:", plain)
+    #print("Decrypted text:", plain)
     return plain
 
 def sanitize(text, key_space):
