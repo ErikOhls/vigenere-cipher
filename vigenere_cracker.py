@@ -1,145 +1,108 @@
 # coding=utf-8
-import vigenere as vig
+
 import time as t
+import sys
 
 def main():
     key_space = "abcdefghijklmnopqrstuvwxyzåäö ,."
-    correct_lengths = [0, 14,6,16,11,16,5,11,13,14,15,7,16,15,11,10,12,12,9]
 
-    f = open("vig_group17.crypto", "r")
-    cipher = f.read()
-    f.close()
-    cipher = vig.sanitize(cipher, key_space)
-
-    test_all = False
+    # Finds key and decrypts for all groups, prints decrypted texts and a timetable
+    test_all = True
     if test_all:
-        corr_count = 0
-        for i in range(1,19):
+        start_total = t.time()
+        time_array = []
+        key_array = []
+        plain_array = []
+        # Open files and decrypt
+        for i in range(1,20):
             file_name = "vig_group" + str(i) + ".crypto"
-            f = open(file_name, "r")
+            try:
+                f = open(file_name, "r")
+            except IOError:
+                print("Can't open file")
+                sys.exit()
             cipher = f.read()
             f.close
-            cipher = vig.sanitize(cipher, key_space)
+            cipher = sanitize(cipher, key_space)
 
-    test_all = False
-    if test_all:
-        corr_count = 0
-        for i in range(1,19):
-            file_name = "vig_group" + str(i) + ".crypto"
-            f = open(file_name, "r")
-            cipher = f.read()
-            f.close
-            cipher = vig.sanitize(cipher, key_space)
-
-            key_length_fried =find_key_length_friedman(cipher)
-            key_length = find_key_length_kasisky(cipher)
-            simple = find_key_length_simple(cipher, len(key_space))
+            start = t.time()
+            key_length = find_key_length_coin(cipher)
             key = find_key_chi(cipher, key_length, key_space)
-            plain = vig.decrypt(cipher, key_space, key)
+            plain = decrypt(cipher, key_space, key)
+            end = t.time()
+            time_array.append(end-start)
+            key_array.append(key)
+            plain_array.append(plain)
 
-            print("group", i, correct_lengths[i], "Friedman", key_length_fried, "= kasisky", key_length, "?", "simple:", simple)
-            #print(plain)
-            if key_length_fried == correct_lengths[i] or key_length_fried % correct_lengths[i] == 0:
-                corr_count += 1
+        # Calculate times
+        end_total = t.time()
+        total = end_total - start_total
+        total = round(total, 5)
+        avarage = total / 18
+        avarage = round(avarage, 5)
 
-        print("Total friedman:", corr_count)
+        # Print plaintexts
+        for i in range(0,19):
+            print("Group " + str(i+1) + ":\nKey: " + key_array[i])
+            print("Plaintext:\n", plain_array[i], "\n\n")
 
-    start = t.time()
-    test_big = False
-    if test_big:
-        for i in range(1,19):
-            file_name = "vig_group" + str(i) + ".crypto"
+        # Format time table
+        timetable = "{:^20}".format("TIMETABLE") + "\n"
+        timetable += "--------------------\n"
+        for i in range(0,19):
+            time = round(time_array[i], 5)
+            timetable += "{:>10}".format("Group " + str(i+1) + ":")
+            timetable += "{:<10}".format("  " + str(time) + "s\n")
+        timetable += "--------------------\n"
+        timetable += "{:>10}".format("Total:")
+        timetable += "{:<10}".format("  " + str(total) + "s\n")
+        timetable += "{:>10}".format("Avarage:")
+        timetable += "{:<10}".format("  " + str(avarage) + "s\n")
+        print(timetable)
+
+    # Finds key and decrypts for one cipher
+    test_single = False
+    if test_single:
+        file_name = "text1.crypto"
+        try:
             f = open(file_name, "r")
-            cipher = f.read()
-            f.close
-            cipher = vig.sanitize(cipher, key_space)
-
-            key_length = find_key_length_friedman(cipher)
-            key = find_key_chi(cipher, key_length, key_space)
-            plain = vig.decrypt(cipher, key_space, key)
-            print("Group", i, plain)
-    end = t.time()
-    print("total time:", end - start)
-
-    test_other = False
-    if test_other:
-        for i in range(1, 5):
-            file_name = "text" + str(i) + ".crypto"
-            f = open(file_name, "r")
-            cipher = f.read()
-            f.close
-            cipher = vig.sanitize(cipher, key_space)
-
-            key_length = find_key_length_friedman(cipher)
-            key = find_key_chi(cipher, key_length, key_space)
-            plain = vig.decrypt(cipher, key_space, key)
-            print(plain)
-            print("--------------------")
-
-    test_brute = False
-    if test_brute:
-        file_name = "text2.crypto"
-        f = open(file_name, "r")
+        except IOError:
+            print("Can't open file")
+            sys.exit()
         cipher = f.read()
         f.close
-        cipher = vig.sanitize(cipher, key_space)
+        cipher = sanitize(cipher, key_space)
 
-        for i in range(1, 50):
-            key = find_key_chi(cipher, i, key_space)
-            plain = vig.decrypt(cipher, key_space, key)
-            print("Group:", i)
-            print(plain)
+        start = t.time()
+        key_length = find_key_length_coin(cipher)
+        key = find_key_chi(cipher, key_length, key_space)
+        plain = decrypt(cipher, key_space, key)
+        end = t.time()
+        total = end - start
 
-def find_key_length_simple(cipher, n):
-    # This is left for posterity. It is an attempt at implementing a version of the friedman test.
-    # Unfortunately it does not return any meaningful values
-    occurance = {}
-    cipher_length = len(cipher)
+        print("Key length:", key_length, "key:", key, "Plaintext:\n", plain, "\nTime taken", total)
 
-    ES = 0.0681
-    k = len(cipher)
-
-    for char in cipher:
-        if char in occurance:
-            occurance[char] += 1
-        else: occurance[char] = 1
-
-    for char in occurance:
-        occurance[char] = occurance[char] * (occurance[char] - 1)
-
-    total = sum(occurance.values())
-    coin_index = total / (cipher_length * (cipher_length-1))
-    T = coin_index
-
-    top = ( ES - ( 1 / n ) ) * k
-    first = ( k - 1 ) * T
-    second = k * (1 / n ) + ES
-
-    result = top / (first - second)
-
-    return result
-
-
-def find_key_length_friedman(cipher):
+def find_key_length_coin(cipher):
     """
     Sig:    string ==> int
     Pre:    cipher is a vigenere cipher
     Post:   integer corresponding to possible key length used to encrypt cipher
 
     Example: Let cipher be a string consisting of a vigenere cipher text
-             find_key_length_friedman(<cipher>) ==> 16
+             find_key_length_coin(<cipher>) ==> 16
     """
-    length = len(cipher)
+    cipher_length = len(cipher)
     coincidence_array = []
     start_length = 3
-    #stop_length = round(len(cipher) / 20) # This was used when trying textN.crypto
+    #stop_length = round(len(cipher) / 20) # This was used when trying ciphers not provided by other groups
     stop_length = 18
 
-    # Try these key lengths
+    # Try these key lengths, and add to coincidence_array for comparison
     for i in range(start_length, stop_length):
         grouped_array = group_cipher(cipher, i)
         total = 0
 
+        # Find coincidence index for all groups of text
         for text in grouped_array:
             sub_total = 0
             occurance = {}
@@ -149,13 +112,16 @@ def find_key_length_friedman(cipher):
                     occurance[char] += 1
                 else: occurance[char] = 1
 
-            # Sum c1(c1-1) (according to the friedman formula)
+            # Executes formula for coincidence index
             for char in occurance:
                 occurance[char] = occurance[char] * (occurance[char] - 1)
+            occ_array = list(occurance.values())
+            for i in range(len(occ_array)):
+                occ_array[i] == occ_array[i] / (cipher_length * (cipher_length - 1))
+            coincidence = sum(occ_array)
 
-            sub_total = sum(occurance.values())
-            coincidence = sub_total / (length * (length - 1))
             total += coincidence
+
         coincidence_array.append(total)
 
     i = start_length
@@ -163,13 +129,11 @@ def find_key_length_friedman(cipher):
 
     # Find a jump in coincidence value, indicating key length
     for value in coincidence_array:
-        if value == coincidence_array[0]:
+        if value == coincidence_array[0]: # Round one
             max_value = value
             prev_value = value
             i += 1
             continue
-
-        #print("key", i, "Current max:", max_value, "Current value:", value)
 
         # A jump of value around 1.4 times the previous value seems like the most accurate indication\
         # that the key length has been found
@@ -180,77 +144,6 @@ def find_key_length_friedman(cipher):
         prev_value = value
 
     return key_length
-
-def find_key_length_kasisky(cipher):
-    """
-    Sig:    string ==> int
-    Pre:    cipher is a vigenere cipher
-    Post:   integer corresponding to possible key length used to encrypt cipher
-
-    Example: Let cipher be a string consisting of a vigenere cipher text
-             find_key_length_kasisky(<cipher>) ==> 16
-    """
-    distance_array = get_distance_array(cipher)
-    key_length = 0
-    max_occurance = 0
-    occurance = 0
-    stop_length = round(len(cipher) / 20)
-
-    # Counts how many times a number evenly divides distances between repeating sets of characters
-    for i in range(2, stop_length):
-        for distance in distance_array:
-            if distance % i == 0:
-                occurance += 1
-
-        # Check if current number is larger than previous
-        #print(i, occurance, max_occurance)
-        if occurance > max_occurance:
-            max_occurance = occurance
-            key_length = i
-
-        # This is needed because, e.g. anything divisible by 4, will also be divisible by 2.
-        # Resulting in smaller numbers always taking precedence over bigger ones
-        elif i % key_length == 0 and occurance > max_occurance * 0.9:
-            max_occurance = occurance
-            key_length = i
-
-        occurance = 0
-
-    return key_length
-
-def get_distance_array(cipher):
-    """
-    Sig:    string ==> int[0..|nr instances of recurring sets of 3 characters|]
-    Pre:    cipher is a string of characters
-    Post:   Array with integers, each integer representing the dinstance between a set of 3 characters found\
-            later in the string
-
-    Example: Let cipher be a string
-             get_distance_array(abcabc) ==> [3]
-             get_distance_array(aaabbbaaapppbbb) = [6, 9]
-    """
-    distance_array = []
-    start_value = 0
-    distance = 0
-
-    # For every character...
-    for char in cipher:
-        i = start_value
-        j = start_value+3
-
-        # ...compare the following 3 characters with the rest of the string
-        for x in range(i, len(cipher)):
-            if cipher[start_value:start_value+3] == cipher[i:j] and distance != 0:
-                distance_array.append(distance)
-                distance = 0
-            i += 1
-            j += 1
-            distance += 1
-
-        start_value += 1
-        distance = 0
-
-    return distance_array
 
 def find_key_chi(cipher, key_length, key_space):
     """
@@ -269,13 +162,14 @@ def find_key_chi(cipher, key_length, key_space):
     key = ""
     for text in group_array:
         chi_array = []
-        # This is essentially the same as cracking a ceaser cipher.
+        # This is essentially the same as cracking a Ceasar cipher.
+        # Finds chi-squared for all possible shifts of the cipher for each particular letter of the key
         for i in range(len(key_space)):
             chi_total = get_chi_value(text, key_space)
             chi_array.append(chi_total)
 
-            shift = ""
             # Shift all of the text one space to the left in the key space. b ==> a, ö ==> ä, etc
+            shift = ""
             for char in text:
                 char_index = key_space.index(char) - 1
                 shift += key_space[char_index]
@@ -349,6 +243,151 @@ def group_cipher(cipher, key_length):
         group = ""
 
     return group_array
+
+def decrypt(cipher, key_space, key):
+    """
+    Sig:    string, string, string ==> string
+    Pre:    cipher is a vigenere cipher, key_space contains all types of characters in cipher, key is the key \
+            used to encrypt plaintext with
+    Post:   plaintext of cipher
+    """
+    K = len(key_space)
+    key_length = len(key)
+    plain = ""
+
+    i = 0
+    for char in cipher:
+        if key_space.find(char) >= 0:
+            plain_index = key_space.index(char) - key_space.index(key[i])
+            plain += key_space[plain_index]
+            i += 1
+            if i == key_length: i = 0
+        else:
+            print("Encountered character not in key_space, character will not be decrypted")
+            plain = plain + char # Note, cipher key does not advance
+
+    return plain
+
+def sanitize(text, key_space):
+    """
+    Sig:    string, string ==> string
+    Pre:    None
+    Post:   string of text with any characters not contained in key_space not in text
+
+    Example:
+             sanitize(abc, ab) ==> ab
+             sanitize(abcdfgab, ab) ==> abab
+    """
+    for char in text:
+        if key_space.find(char) >= 0:
+            continue
+        else:
+            text = text.replace(char, "")
+    return text
+
+""" -------------------------------------------------------------------------------- """
+""" --------- Below this line is code unused for decrypting studen ciphers --------- """
+""" -------------------------------------------------------------------------------- """
+
+def find_key_length_friedman(cipher, n):
+    # This is left for posterity. It is an attempt at implementing a version of the friedman test.
+    # Unfortunately it does not return any meaningful values
+    occurance = {}
+    cipher_length = len(cipher)
+
+    ES = 0.0681
+    k = len(cipher)
+
+    for char in cipher:
+        if char in occurance:
+            occurance[char] += 1
+        else: occurance[char] = 1
+
+    for char in occurance:
+        occurance[char] = occurance[char] * (occurance[char] - 1)
+
+    total = sum(occurance.values())
+    coin_index = total / (cipher_length * (cipher_length-1))
+    T = coin_index
+
+    top = ( ES - ( 1 / n ) ) * k
+    first = ( k - 1 ) * T
+    second = k * (1 / n ) + ES
+
+    result = top / (first - second)
+
+    return result
+
+def find_key_length_kasisky(cipher):
+    """
+    Sig:    string ==> int
+    Pre:    cipher is a vigenere cipher
+    Post:   integer corresponding to possible key length used to encrypt cipher
+
+    Example: Let cipher be a string consisting of a vigenere cipher text
+             find_key_length_kasisky(<cipher>) ==> 16
+    """
+    distance_array = get_distance_array(cipher)
+    key_length = 0
+    max_occurance = 0
+    occurance = 0
+    stop_length = round(len(cipher) / 20)
+
+    # Counts how many times a number evenly divides distances between repeating sets of characters
+    for i in range(2, stop_length):
+        for distance in distance_array:
+            if distance % i == 0:
+                occurance += 1
+
+        # Check if current number is larger than previous
+        #print(i, occurance, max_occurance)
+        if occurance > max_occurance:
+            max_occurance = occurance
+            key_length = i
+
+        # This is needed because, e.g. anything divisible by 4, will also be divisible by 2.
+        # Resulting in smaller numbers always taking precedence over bigger ones
+        elif i % key_length == 0 and occurance > max_occurance * 0.9:
+            max_occurance = occurance
+            key_length = i
+
+        occurance = 0
+
+    return key_length
+
+def get_distance_array(cipher):
+    """
+    Sig:    string ==> int[0..|nr instances of recurring sets of 3 characters|]
+    Pre:    cipher is a string of characters
+    Post:   Array with integers, each integer representing the dinstance between a set of 3 characters found\
+            later in the string
+
+    Example: Let cipher be a string
+             get_distance_array(abcabc) ==> [3]
+             get_distance_array(aaabbbaaapppbbb) = [6, 9]
+    """
+    distance_array = []
+    start_value = 0
+    distance = 0
+
+    # For every character...
+    for char in cipher:
+        i = start_value
+        j = start_value+3
+
+        # ...compare the following 3 characters with the rest of the string
+        for x in range(i, len(cipher)):
+            if cipher[start_value:start_value+3] == cipher[i:j] and distance != 0:
+                distance_array.append(distance)
+                distance = 0
+            i += 1
+            j += 1
+            distance += 1
+
+        start_value += 1
+        distance = 0
+
+    return distance_array
 
 if __name__ == '__main__':
     main()
