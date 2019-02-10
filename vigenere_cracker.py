@@ -104,7 +104,6 @@ def find_key_length_coin(cipher):
 
         # Find coincidence index for all groups of text
         for text in grouped_array:
-            sub_total = 0
             occurance = {}
             # Find total occurances
             for char in text:
@@ -115,10 +114,8 @@ def find_key_length_coin(cipher):
             # Executes formula for coincidence index
             for char in occurance:
                 occurance[char] = occurance[char] * (occurance[char] - 1)
-            occ_array = list(occurance.values())
-            for i in range(len(occ_array)):
-                occ_array[i] == occ_array[i] / (cipher_length * (cipher_length - 1))
-            coincidence = sum(occ_array)
+            summation = sum(occurance.values())
+            coincidence = summation / (cipher_length * (cipher_length - 1))
 
             total += coincidence
 
